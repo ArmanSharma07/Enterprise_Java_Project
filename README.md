@@ -1,6 +1,6 @@
 # Student Management — Enterprise Java Project
 
-Welcome to **Student Management**, a Spring Boot REST API built step by step across nine hands-on lab experiments for the Enterprise Java course (`com.example.ucs067`).
+Welcome to **Student Management**, a Spring Boot REST API built step by step across nine hands-on lab experiments for the Enterprise Java course .
 
 What started as a simple `"Hello, Spring Boot!"` endpoint gradually evolved into a complete, database-backed backend service. Along the way, it picked up full CRUD operations, MySQL persistence with Spring Data JPA, dynamic search, pagination and sorting, a one-to-many Student–Course relationship, bean validation with centralized error handling, automated integration tests, and HTTP Basic authentication.
 
@@ -30,7 +30,7 @@ Rather than jumping straight into a finished codebase, this project tells the st
 
 
 ## Project Structure
-
+```
 student-management/
 ├── pom.xml
 ├── mvnw / mvnw.cmd
@@ -54,7 +54,7 @@ student-management/
     └── test/
         └── java/com/example/ucs067/studentmanagement/
             └── StudentManagementApplicationTests.java
-
+```
 
 
 
