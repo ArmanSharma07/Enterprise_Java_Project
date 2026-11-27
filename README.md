@@ -176,113 +176,45 @@ Each experiment built naturally on the limitations or questions uncovered in the
 4. Verified at http://localhost:8081/hello
 
 ### Experiment 3 — CRUD with JSON & In-Memory Storage
-In this experiment, essentially built out a complete set of CRUD (Create, Read, Update, Delete) features for a Spring Boot student management app.
-
-step-by-step process:
-1. Prepared the Student Model: updated Student.java with a default constructor and setters so it can easily handle incoming JSON data.
-2. Set Up a Temporary Database: Instead of connecting to a real database right away, you created an in-memory list inside HelloController.java to hold some dummy student records while the app runs.
-3. Built the REST APIs: Gradually added endpoints to fetch all students, look up a specific student by ID, add new students via POST, update existing details using PUT, and delete records.
-4. Tested Everything: Used curl commands in the command line to test out each endpoint and make sure everything—including error handling like 404 responses—was working properly.
+1. Made a Student class with an id, name, and email.
+2. Kept the students in a plain list while the app was running, so everything reset on restart.
+3. Wrote endpoints to view, add, update, and delete students, and returned a 404 when a student wasn't found.
+4. Learned how Spring turns JSON into Java objects and how URLs carry values like an id.
 
 ### Experiment 4 — MySQL Integration with Spring Data JPA
-In the previous step, all our student data disappeared every time the app restarted because it only lived in memory. To make our data stick around permanently, we connected the project to a real MySQL database:
-
-1. Set up MySQL & Project Dependencies
-We installed MySQL, created a new database called studentdb, and added spring-boot-starter-data-jpa and mysql-connector-j to our project so Spring Boot knows how to talk to MySQL.
-2. Connected the Database in application.properties
-We added our MySQL login details and database URL to application.properties, along with spring.jpa.hibernate.ddl-auto=update so Hibernate can automatically create and update our database tables for us.
-3. Turned Student into a Database Table (@Entity)
-We annotated the Student class with @Entity, @Table(name = "students"), and @Id. This tells Spring and Hibernate: "This Java class represents the students table in MySQL, and id is its primary key."
-4. Created StudentRepository
-We created an interface StudentRepository that extends JpaRepository<Student, Integer>. Without writing a single line of SQL, Spring Data JPA gives us ready-to-use database operations out of the box.
-5. Swapped the In-Memory List for the Repository
-In HelloController, we replaced our temporary ArrayList with StudentRepository methods—using findAll(), save(), findById(), existsById(), and deleteById() to handle all CRUD requests directly in MySQL.
-6. Verified Everything Persists
-Finally, we restarted the application and ran SELECT * FROM students; in MySQL. Seeing our saved students still sitting safely in the table proved that our data now survives restarts!
+1. Set up MySQL and created a studentdb database for the project.
+2. Added JPA and the MySQL driver, then turned Student into a database entity.
+3. Created a repository so Spring handles the SQL for me.
+4. Restarted the app to confirm the data was still there, which the old list couldn't do.
 
 ### Experiment 5 — Derived Queries, Pagination & Sorting
-Once our students were safely stored in MySQL, simply fetching all of them at once wasn't enough. Next, we made it easy to search, break results into pages, and sort them—without having to write any SQL manually:
-
-1. Added Smart Search Methods (Derived Queries)
-In StudentRepository, we declared three simple method names: findByName, findByNameContaining, and findByEmail. Just by reading the method names, Spring Data JPA automatically figures out and generates the right SQL queries behind the scenes.
-2. Exposed Search Endpoints in the Controller
-We connected those repository methods to new API routes in HelloController so users can search for a student by exact name, partial keyword, or email address directly through URLs.
-3. Added Pagination (Pageable)
-Instead of dumping every student onto one screen, we added /students/page?page=0&size=2 using Spring's Pageable. This lets us fetch records in neat chunks (for example, 2 students per page), just like pages in a real web app.
-4. Added Sorting (Sort)
-We added /students/sort/name using Sort.by("name") so the API can return all students cleanly arranged in alphabetical order by their name.
+1. Added search methods just by naming them properly, such as finding students by name or email.
+2. Built a "name contains" search for partial matches.
+3. Added a paged endpoint so large lists come back in small chunks.
+4. Added an endpoint that returns students in alphabetical order.
 
 ### Experiment 6 — One-to-Many Relationship (`Student` ↔ `Course`)
-In real life, a student doesn't exist in isolation—they enroll in courses. In this step, we taught our application how to connect one student to multiple courses:
-
-1. Created the Course Entity
-We built a new Course class with id, courseName, and credits, letting the database generate each course's id automatically.
-2. Linked Student and Course Together
-We set up a two-way relationship between the two entities:
---> On Student, we added @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true) so one student can hold a list of courses (and deleting or updating a student cleans up their courses automatically).
--->On Course, we added @ManyToOne, making Course the owning side of the relationship that stores the student_id foreign key in the database.
-3. Stopped Infinite JSON Loops
-Because Student points to Course and Course points right back to Student, converting them to JSON would loop forever. Adding @JsonManagedReference on Student and @JsonBackReference on Course cleanly broke that loop.
-4. Added CourseRepository and Course Endpoints
-We created CourseRepository and added two new endpoints in the controller: GET /courses to view all courses, and POST /students/{studentId}/courses to enroll a student in a new course.
-5. Verified Multiple Enrollments
-We tested adding more than one course to the same student and confirmed that one student can successfully hold multiple courses in both the API response and MySQL.
+1. Created a Course entity and its repository.
+2. Connected the two so that one student can have many courses.
+3. Added an endpoint to attach a new course to a particular student.
+4. Fixed an endless JSON loop between the two classes using Jackson annotations.
 
 ### Experiment 7 — Bean Validation & Centralized Error Handling
-Up until now, someone could save a student with an empty name or a fake email address. In this step, we added simple safety rules so bad data gets blocked and explained clearly:
-
-1. Added the Validation Tool
-We added spring-boot-starter-validation to the project so Spring Boot can automatically check incoming data before saving it.
-
-2. Set Rules on Student Fields
-We added @NotBlank and @Email on the Student fields (so names and emails cannot be blank, and emails must look like real emails), and placed @Valid on the POST and PUT request bodies to make sure those rules are checked every time someone adds or edits a student.
-
-3. Created a Central Error Handler (GlobalExceptionHandler)
-Instead of letting Spring throw ugly default errors, we created GlobalExceptionHandler using @RestControllerAdvice and @ExceptionHandler(MethodArgumentNotValidException.class). Whenever validation fails, it catches the mistake in one place and sends back an HTTP 400 (Bad Request) along with a clean, readable JSON list showing exactly which field failed and why.
-
-4. Tested Bad Data Safely
-We sent invalid POST and PUT requests and confirmed they were blocked right away—and most importantly, when an invalid PUT update failed, the existing student data stayed untouched and safe.
+1. Added rules so a student can't be saved with an empty name or a badly formatted email.
+2. Turned on validation in the create and update endpoints.
+3. Wrote one central error handler that returns a clear 400 message instead of a messy error page.
+4. Checked that a rejected update leaves the saved record untouched.
 
 ### Experiment 8 — API Testing with cURL & JUnit / MockMvc
-In this step, we tested everything properly—both by hand and automatically—and fixed student IDs so we no longer have to type them ourselves:
-
-1. Tested Everything by Hand with cURL
-We ran cURL commands against our live MySQL database to check every CRUD action (Create, Read, Update, Delete) and made sure the right HTTP status codes came back: 200 for success, 400 for bad input, and 404 when a student isn't found.
-
-2. Let MySQL Generate Student IDs Automatically
-We updated Student to use @GeneratedValue(strategy = GenerationType.IDENTITY) with an Integer id, added a constructor without the id, and removed @Positive from id. Now we only send name and email, and MySQL picks the next ID automatically.
-
-3. Fixed the students Table in MySQL
-Because course was linked to students.id with a foreign key, we temporarily dropped that foreign key, updated students.id to AUTO_INCREMENT, and then restored the foreign key so everything stayed safely connected.
-
-4. Wrote Automated Tests with JUnit and MockMvc
-Using @SpringBootTest, @AutoConfigureMockMvc, and MockMvc, we added automated tests to check three things automatically:
--->The Spring Boot app starts up cleanly (contextLoads).
--->Calling /hello returns the expected greeting message.
--->Sending invalid student data returns 400 Bad Request along with the expected validation error messages.
+1. Went through every endpoint using cURL and checked the status codes (200, 400, 404).
+2. Let the database generate student IDs automatically instead of typing them in.
+3. Wrote my first automated tests with JUnit and MockMvc to check /hello and the validation errors.
 
 ### Experiment 9 — Securing the API with Spring Security
-Up to this point, anyone could view, edit, or delete students without logging in. In the final step, we added basic username-and-password protection to keep our API safe:
-
-1. Added Spring Security and Saw How It Works by Default
-We added spring-boot-starter-security to the project. Right away, Spring Boot locked every endpoint automatically—using a default username (user) and printing a temporary random password in the console.
-
-2. Set Our Own Fixed Username and Password
-So we wouldn't have to copy a new random password every time the app restarted, we set a fixed local username and password inside application.properties.
-
-3. Created SecurityConfig to Control Who Can Access What
-We added a SecurityConfig class with a SecurityFilterChain bean to set clear rules:
-
--->/hello stays public (permitAll) so anyone can check if the app is running.
--->Every other request requires a login (anyRequest().authenticated()).
--->Enabled HTTP Basic authentication so tools like curl or a browser can send a username and password.
--->Turned off CSRF since this is just a simple, stateless local API exercise using Basic auth rather than browser forms.
-
-4. Tested the Lock
-We tested protected endpoints three ways to be sure it worked:
--->No login details → blocked with 401 Unauthorized
--->Wrong username/password → blocked with 401 Unauthorized
--->Correct username/password → allowed through with 200 OK
+1. Added Spring Security and saw how it blocks access by default.
+2. Set a fixed username and password for local testing.
+3. Wrote a security config where /hello stays public and everything else needs a login.
+4. Tested with the right password, the wrong one, and none at all to see the 200 and 401 responses.
 ---
 
 ## Key Concepts Explored
